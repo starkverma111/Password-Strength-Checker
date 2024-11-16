@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Password Strength Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/google-sans" rel="stylesheet">
+    <style>
+      * {
+        font-family: 'Product Sans', sans-serif !important;
+      }
+
+      img {
+        height: 600px;
+        width: 600px;
+      }
+    </style>
+  </head>
+  <body class="bg-stone-100 h-screen">
+    <div class="container-lg bg-white rounded-3xl border border-gray-50 shadow-sm border-2 max-w-6xl  mx-auto flex justify-center mt-16 p-8">
+      <div class="grid grid-cols md:grid-cols-2 lg:grid-cols-2  gap-4 bg">
+        <div class="p-0  self-end"><img src="./img/cute.png" class="drop-shadow-sm object-cover " /></div>
+        <div class="z-10 p-4 border rounded-2xl border-zinc-200 border-2 px-8 bg-white">
+          <h1 class="text-gray-900 text-4xl text-center leading-relaxed mt-6"> Password Strength Checker</h1>
+          <div class="my-6"><label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enter password</label><input type="text" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></div>
+          <!-- use this ui for display -->
+          <h3 class="mb-4 font-bold text-gray-800 dark:text-white text-lg">Password requirements:</h3>
+          <ul class="w-full text-sm font-medium text-gray-900 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            <li class="w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div class="flex items-center ps-3">
+                <input disabled id="Lowercase" type="checkbox" value="" class="w-4 h-4 rounded-full text-green-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                <label for="Lowercase" class="w-full py-3 ms-2 text-lg font-medium text-gray-900 dark:text-gray-300">Lowercase letters (a-z)</label>
+              </div>
+            </li>
+            <li class="w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div class="flex items-center ps-3">
+                <input disabled id="Uppercase" type="checkbox" value="" class="w-4 h-4 rounded-full text-green-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                <label for="Uppercase" class="w-full py-3 ms-2 text-lg font-medium text-gray-900 dark:text-gray-300">Uppercase letters (A-Z)</label>
+              </div>
+            </li>
+            <li class="w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div class="flex items-center ps-3">
+                <input disabled id="Numbers" type="checkbox" value="" class="w-4 h-4 rounded-full text-green-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                <label for="Numbers" class="w-full py-3 ms-2 text-lg font-medium text-gray-900 dark:text-gray-300">Numbers (0-9)</label>
+              </div>
+            </li>
+            <li class="w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div class="flex items-center ps-3">
+                <input disabled id="Special" type="checkbox" value="" class="w-4 h-4 rounded-full text-green-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                <label for="Special" class="w-full py-3 ms-2 text-lg font-medium text-gray-900 dark:text-gray-300">Special characters (!@#$%^&*, etc.)</label>
+              </div>
+            </li>
+          </ul>
+          <div class="text-xl text-center mb-4 mt-6 text-gray-700 my-1"> Strength: <span id="feedback"></span>
+          </div>
+          <div id="time-to-crack" class="text-center text-xl text-gray-600 py-1"></div>
+        </div>
+      </div>
+      <script>
+        const passwordInput = document.getElementById('password');
+        const checkboxes = {
+          lowercase: document.getElementById('Lowercase'),
+          uppercase: document.getElementById('Uppercase'),
+          numbers: document.getElementById('Numbers'),
+          special: document.getElementById('Special'),
+        };
+        const feedback = document.getElementById('feedback');
+        const timeToCrack = document.getElementById('time-to-crack');
+        // Calculate entropy based on password characteristics
+        const calculateEntropy = (password) => {
+          const length = password.length;
+          let charSetSize = 0;
+          if (/[a-z]/.test(password)) charSetSize += 26; // Lowercase letters
+          if (/[A-Z]/.test(password)) charSetSize += 26; // Uppercase letters
+          if (/[0-9]/.test(password)) charSetSize += 10; // Numbers
+          if (/[^a-zA-Z0-9]/.test(password)) charSetSize += 32; // Special characters
+          return Math.floor(length * Math.log2(charSetSize));
+        };
+        // Convert cracking time in seconds to years, months, and days
+        const formatTimeToCrack = (seconds) => {
+          const days = seconds / (60 * 60 * 24);
+          const years = Math.floor(days / 365.25);
+          const months = Math.floor((days % 365.25) / 30.44); // Average month length
+          const remainingDays = Math.floor(days % 365.25 % 30.44);
+          return {
+            years,
+            months,
+            remainingDays
+          };
+        };
+        // Update checkboxes based on password composition
+        const updateCheckboxes = (password) => {
+          const checks = {
+            lowercase: /[a-z]/.test(password),
+            uppercase: /[A-Z]/.test(password),
+            numbers: /[0-9]/.test(password),
+            special: /[^a-zA-Z0-9]/.test(password),
+          };
+          if (password === '') {
+            // If password is empty, uncheck all checkboxes
+            for (const key in checkboxes) {
+              checkboxes[key].checked = false;
+            }
+            return;
+          }
+          // Otherwise, update checkboxes based on checks
+          for (const key in checks) {
+            const checkbox = checkboxes[key];
+            checkbox.checked = checks[key];
+          }
+        };
+        // Event listener for password input changes
+        passwordInput.addEventListener('input', () => {
+          const password = passwordInput.value;
+          if (password === '') {
+            // If password is empty, hide both the strength and time-to-crack sections
+            feedback.textContent = '';
+            timeToCrack.textContent = '';
+            updateCheckboxes(password); // Ensure all checkboxes are unchecked
+            return; // Exit the function early
+          }
+          // Update the checkboxes
+          updateCheckboxes(password);
+          // Calculate entropy and strength
+          const entropy = calculateEntropy(password);
+          let strength = '';
+          if (entropy < 28) {
+            strength = 'Weak';
+            feedback.style.color = 'red';
+          } else if (entropy < 36) {
+            strength = 'Fair';
+            feedback.style.color = 'orange';
+          } else if (entropy < 60) {
+            strength = 'Strong';
+            feedback.style.color = 'blue';
+          } else {
+            strength = 'Very Strong';
+            feedback.style.color = 'green';
+          }
+          feedback.textContent = `${strength}`;
+          // Estimate time to crack
+          const guessesPerSecond = 1e9; // 1 billion guesses per second
+          const totalGuesses = Math.pow(2, entropy);
+          const secondsToCrack = totalGuesses / guessesPerSecond;
+          const time = formatTimeToCrack(secondsToCrack);
+          timeToCrack.textContent = `Time to crack: ${time.years} years / ${time.months} months / ${time.remainingDays} days`;
+        });
+      </script>
+      <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+  </body>
+</html>

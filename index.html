@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Password Strength Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/google-sans" rel="stylesheet">
+    <style>
+      * {
+        font-family: 'Product Sans', sans-serif !important;
+      }
+      img {
+        height: 600px;
+        width: 600px;
+      }
+	  
+	  
+    </style>
+  </head>
+  <body class="subpixel-antialiased bg-stone-100 h-screen">
+    <div id="app" class="container-lg  rounded-3xl   max-w-6xl mx-auto flex justify-center mt-16 p-8  overflow-hidden">
+      <div class="grid grid-cols md:grid-cols-2 lg:grid-cols-2 gap-4 bg-gray-200 rounded-full ">
+        <div class="p-0 self-end "><img src="./img/cute.png" class="drop-shadow-sm object-cover hover:scale-125 transition-all duration-500 cursor-pointer" /></div>
+        <div class=" z-10 p-4 border rounded-2xl border-zinc-200 border-2 px-8 bg-white shadow-sm">
+          <h1 class="text-gray-900 text-4xl text-center leading-relaxed mt-6">Password Strength Checker</h1>
+          <div class="my-6">
+            <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enter password</label>
+            <input 
+              type="text" 
+              id="password" 
+              v-model="password" 
+              @input="evaluatePassword" 
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+          </div>
+          <h3 class="mb-4 font-bold text-gray-800 dark:text-white text-lg">Password requirements:</h3>
+          <ul class="w-full text-sm font-medium text-gray-900 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            <li v-for="(status, key) in checks" :key="key" class="w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div class="flex items-center ps-3">
+                <input type="checkbox" :id="key" :checked="status" disabled class="w-4 h-4 rounded-full text-green-500 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500">
+                <label :for="key" class="w-full py-3 ms-2 text-lg font-medium text-gray-900 dark:text-gray-300">{{ descriptions[key] }}</label>
+              </div>
+            </li>
+          </ul>
+          <div class="text-lg text-center mb-4 mt-6 text-gray-700 my-1"> Strength: 
+            <span :style="{ color: feedbackColor }">{{ strength }}</span>
+          </div>
+          <div id="time-to-crack" class="text-center text-lg text-gray-600 py-1">
+            Time to crack: {{ timeToCrack }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const app = Vue.createApp({
+        data() {
+          return {
+            password: '',
+            checks: {
+              lowercase: false,
+              uppercase: false,
+              numbers: false,
+              special: false,
+            },
+            descriptions: {
+              lowercase: 'Lowercase letters (a-z)',
+              uppercase: 'Uppercase letters (A-Z)',
+              numbers: 'Numbers (0-9)',
+              special: 'Special characters (!@#$%^&*, etc.)',
+            },
+            strength: '',
+            feedbackColor: 'black',
+            timeToCrack: '',
+          };
+        },
+        methods: {
+          evaluatePassword() {
+            const password = this.password;
+
+            if (!password) {
+              // Reset values when input is empty
+              this.strength = '';
+              this.feedbackColor = 'black';
+              this.timeToCrack = '';
+              this.updateChecks(password); // Reset checkboxes
+              return;
+            }
+
+            this.updateChecks(password);
+            const entropy = this.calculateEntropy(password);
+
+            // Determine strength
+            if (entropy < 28) {
+              this.strength = 'Weak';
+              this.feedbackColor = 'red';
+            } else if (entropy < 36) {
+              this.strength = 'Fair';
+              this.feedbackColor = 'orange';
+            } else if (entropy < 60) {
+              this.strength = 'Strong';
+              this.feedbackColor = 'blue';
+            } else {
+              this.strength = 'Very Strong';
+              this.feedbackColor = 'green';
+            }
+
+            // Estimate time to crack
+            const guessesPerSecond = 1e9; // 1 billion guesses per second
+            const totalGuesses = Math.pow(2, entropy);
+            const secondsToCrack = totalGuesses / guessesPerSecond;
+            this.timeToCrack = this.formatTimeToCrack(secondsToCrack);
+          },
+          updateChecks(password) {
+            this.checks.lowercase = /[a-z]/.test(password);
+            this.checks.uppercase = /[A-Z]/.test(password);
+            this.checks.numbers = /[0-9]/.test(password);
+            this.checks.special = /[^a-zA-Z0-9]/.test(password);
+          },
+          calculateEntropy(password) {
+            const length = password.length;
+            let charSetSize = 0;
+            if (/[a-z]/.test(password)) charSetSize += 26;
+            if (/[A-Z]/.test(password)) charSetSize += 26;
+            if (/[0-9]/.test(password)) charSetSize += 10;
+            if (/[^a-zA-Z0-9]/.test(password)) charSetSize += 32;
+            return length * Math.log2(charSetSize);
+          },
+          formatTimeToCrack(seconds) {
+            const days = seconds / (60 * 60 * 24);
+            const years = Math.floor(days / 365.25);
+            const months = Math.floor((days % 365.25) / 30.44);
+            const remainingDays = Math.floor(days % 365.25 % 30.44);
+            return `${years} years / ${months} months / ${remainingDays} days`;
+          },
+        },
+      });
+
+      app.mount('#app');
+    </script>
+  </body>
+</html>
